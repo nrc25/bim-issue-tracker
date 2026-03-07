@@ -1,0 +1,48 @@
+// ============================================================
+//  Prisma Schema — Issue Management MVP
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Issue {
+  id          String   @id @default(uuid())
+  title       String
+  description String   @default("")
+  status      String   @default("Open") // Open | InProgress | Resolved | Closed
+
+  // Pin Location (APS Viewer 3D座標)
+  pinX        Float
+  pinY        Float
+  pinZ        Float
+  viewerState String?  @db.Text // APS Viewer カメラ状態JSON
+
+  photos      Photo[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([status])
+  @@map("issues")
+}
+
+model Photo {
+  id          String   @id @default(uuid())
+  objectKey   String   // MinIO object key
+  fileName    String
+  contentType String
+
+  issueId     String
+  issue       Issue    @relation(fields: [issueId], references: [id], onDelete: Cascade)
+
+  uploadedAt  DateTime @default(now())
+
+  @@index([issueId])
+  @@map("photos")
+}
