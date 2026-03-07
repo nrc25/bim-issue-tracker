@@ -6,3 +6,6 @@ next-env.d.ts
 secret.json
 .env
 .env.local
+.DS_Store
+**/.DS_Store
+*.swp
