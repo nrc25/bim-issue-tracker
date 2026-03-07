@@ -244,3 +244,42 @@ MIT
 * **コンソールの軽微なフェッチエラー:** 開発サーバーのホットリロード時やAPIのポーリング通信時に `TypeError: Load failed` がコンソールに記録される場合がありますが、機能への影響はありません。
 * **ForgeViewerの警告:** `Property database integrity not guaranteed` 等の警告は、APS Viewer SDKの仕様およびサンプルのBIMモデルに起因するものであり、描画および座標取得の動作には影響しません。
 * **特定のオブジェクト表面でのピンの視認性:** 高層の建物など一部のオブジェクト表面にピンを配置した際、3Dエンジンの隠面消去（オクルージョン）判定により、ピンのアイコンがモデル内部にめり込んで視認しづらくなる場合があります。座標の取得とDBへの保存自体は正常に行われています。
+
+## 8. 設計要求 (Architecture & Domain Design)
+
+### 8.1 アーキテクチャ
+* Domain / Application / Infrastructure / Presentation の4層に分離
+* 依存方向は外側から内側へ統一
+* Next.js / Prisma / MinIO / APS Viewer への依存は Presentation / Infrastructure に閉じ込めています
+* 詳細は `docs/architecture.md` を参照
+
+### 8.2 ドメイン設計
+* `Issue` を中心に、座標・状態・写真メタデータを管理
+* `IssueStatus` や `PinLocation` を値オブジェクトとして分離
+* ステータス遷移はドメインルールで制御
+
+### 8.3 CQRS的整理
+* GET 系を Query、POST 系を Command として分離
+* 読み取りと書き込みの責務を API / UseCase で分離
+* 詳細は `docs/api.md` を参照
+
+### 8.4 永続化
+* Issue は PostgreSQL
+* 写真バイナリは MinIO
+* DB には objectKey / metadata のみ保持
+* Repository インターフェースを介して Prisma 実装を差し替え可能にしています
+
+### 8.5 外部依存の隔離
+* APS Viewer 操作は `use-forge-viewer.ts` に集約
+* Object Storage は抽象ポート経由で利用
+* フロントは API Route を通じて永続化層へアクセス
+
+### 8.6 本番拡張の想定
+* 認証導入
+* プロジェクト単位のマルチテナント化
+* 大量ピン時のクラスタリング / キャッシュ導入
+* 監査ログやロール制御の追加
+
+### 補足
+* 一部の高所オブジェクトではピンがオクルージョンにより見えにくくなる場合があります
+* 位置座標の取得・保存自体は正常です
